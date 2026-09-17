@@ -5,6 +5,19 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- Outages that do not reach the configured address were reported as if they
+  did. The `/waapi/outages/address` endpoint returns every outage in the area;
+  the coordinator now keeps an item only when the configured
+  `AddressPoint.AddressPointId` is among the item's `AddressPointIds`. Items
+  published without that list (area-wide faults drawn as a polygon over the
+  whole commune) are kept only when their text names the configured town.
+  Skipped items are logged at `DEBUG` (point list mismatch) and `INFO`
+  (area-wide fault naming another town).
+
 ## [0.3.1] - 2026-07-18
 
 Documentation only. The integration code is identical to 0.3.0.

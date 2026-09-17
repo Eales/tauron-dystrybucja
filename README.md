@@ -232,11 +232,15 @@ automation:
 
 ## Notes
 
-- **Always read the description.** Tauron matches outages to an address by
-  *area*, and the description lists the streets actually affected - which may be
-  streets other than yours. An outage returned for your address is not a promise
-  that your address loses power. The description is the only way to tell, which
-  is why every card here shows it.
+- **Only outages that reach your address are reported.** The API answers with
+  every outage in the area, so the integration keeps an item only when the
+  address point Tauron assigned to your house is on the item's list of affected
+  points. Area-wide faults come without such a list; those are kept only when
+  their text names your town. Skipped items are logged at `INFO` level by
+  `custom_components.tauron_dystrybucja.coordinator`.
+- **Still read the description.** For an area-wide fault the town name is the
+  only hint, so the description remains the final word on whether your street
+  is affected. Every card here shows it for that reason.
 - `New outage` stays silent on the first refresh after a restart, so restarting
   Home Assistant never replays announcements you already saw.
 - Tauron reuses one outage ID across separate time slots of the same works. Each
