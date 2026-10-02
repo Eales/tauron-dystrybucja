@@ -31,9 +31,27 @@ directory and restart.
 
 1. `Settings` > `Devices & Services` > `Add Integration`
 2. Search for `Tauron Dystrybucja`
-3. Type at least 3 characters of the city name, then pick your city
-4. Type at least 3 characters of the street name, then pick your street
-5. Enter your house number
+3. Choose **Address suggestions**, then open the integration's form
+4. Type at least 3 characters of the city name and select a suggestion. Do the
+   same for the street, then enter the house number
+5. Click **Use this address** and return to the Home Assistant setup dialog to
+   check the result. Tauron connectivity, unsupported-area and duplicate checks
+   still run in Home Assistant before an entry is created
+
+Suggestions are loaded while typing (after a short pause). Changing the city
+clears the street; typing over either selected name requires choosing a new
+suggestion. Arrow keys and Enter also work. The form uses your browser language
+(Polish or English) and supports narrow screens and dark mode.
+
+The page is served by your own HA instance, not an external service. Only the
+address searches go to Tauron. The setup link expires after 15 minutes and stops
+working after completion or cancellation. If it expires or you reload the page,
+reopen the link from the HA dialog; if that session has expired, cancel setup and
+start again. No Home Assistant password or long-lived token is given to the page.
+
+**Standard form** retains the original separate search/selection steps. Use it
+if your browser cannot open the new page. To switch methods, cancel the current
+setup in HA and start it again. Existing configured addresses need no migration.
 
 Add the integration several times to watch several addresses.
 

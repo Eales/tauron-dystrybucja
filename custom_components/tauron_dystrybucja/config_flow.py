@@ -20,6 +20,7 @@ from homeassistant.helpers.selector import (
 )
 
 from .api import TauronApi, TauronApiError, TauronUnsupportedAreaError
+from .address_wizard import WIZARD_URL, WizardError, async_get_wizard
 from .const import (
     CONF_CITY_GAID,
     CONF_CITY_NAME,
@@ -48,6 +49,8 @@ class TauronConfigFlow(ConfigFlow, domain=DOMAIN):
         self._streets: dict[str, dict[str, Any]] = {}
         self._city: dict[str, Any] | None = None
         self._street: dict[str, Any] | None = None
+        self._wizard_token: str | None = None
+        self._wizard_house: str | None = None
 
     @property
     def api(self) -> TauronApi:
@@ -56,6 +59,31 @@ class TauronConfigFlow(ConfigFlow, domain=DOMAIN):
         return self._api
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        """Offer live suggestions or the standard HA form."""
+        return self.async_show_menu(step_id="user", menu_options=["address", "manual"])
+
+    async def async_step_address(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        """Open the flow-bound address picker in a separate browser page."""
+        if user_input is not None:
+            self._city = user_input["city"]
+            self._street = user_input["street"]
+            self._wizard_house = user_input["house_no"]
+            return self.async_external_step_done(next_step_id="finish")
+        wizard = await async_get_wizard(self.hass)
+        if self._wizard_token is None:
+            try:
+                self._wizard_token = wizard.create(self.flow_id, self.api)
+            except WizardError:
+                return self.async_abort(reason="wizard_busy")
+        return self.async_external_step(
+            step_id="address", url=f"{WIZARD_URL}#{self._wizard_token}"
+        )
+
+    async def async_step_finish(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        """Validate with Tauron and finish in HA, including duplicate detection."""
+        return await self.async_step_house_number({"house_no": self._wizard_house})
+
+    async def async_step_manual(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Ask for part of the city name."""
         errors: dict[str, str] = {}
         if user_input is not None:
@@ -75,7 +103,7 @@ class TauronConfigFlow(ConfigFlow, domain=DOMAIN):
                     errors["city_partial"] = "no_cities_found"
 
         return self.async_show_form(
-            step_id="user",
+            step_id="manual",
             data_schema=vol.Schema({vol.Required("city_partial"): str}),
             errors=errors,
         )

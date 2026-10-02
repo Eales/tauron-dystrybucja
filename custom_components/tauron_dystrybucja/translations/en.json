@@ -3,8 +3,22 @@
     "step": {
       "user": {
         "title": "Tauron Dystrybucja",
+        "description": "Choose how to enter the address.",
+        "menu_options": {
+          "address": "Address suggestions",
+          "manual": "Standard form"
+        }
+      },
+      "address": {
+        "title": "Choose an address",
+        "description": "Open the integration form. Type at least 3 characters and choose a city and street from the suggestions, then enter the house number. After submitting, return here to check the setup result. The link lasts 15 minutes. To use the standard form, cancel setup and start again."
+      },
+      "manual": {
+        "title": "Tauron Dystrybucja",
         "description": "Enter at least 3 characters of the city name.",
-        "data": { "city_partial": "City" }
+        "data": {
+          "city_partial": "City"
+        }
       },
       "city": {
         "title": "Select city",
@@ -33,7 +47,8 @@
       "invalid_house_number": "Enter a house number."
     },
     "abort": {
-      "already_configured": "This address is already configured."
+      "already_configured": "This address is already configured.",
+      "wizard_busy": "Too many forms are open. Try later or use the standard form."
     }
   },
   "options": {
