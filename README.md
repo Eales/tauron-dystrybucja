@@ -94,8 +94,9 @@ Additionally:
   fires.
 
 Outage lists and new-outage events also include the scope/matching attributes.
-The response scope and address-resolution attributes remain available even when
-there are no reports. Calendar titles distinguish address, area and unknown
+Sensors retain response scope and address-resolution attributes even when
+there are no reports. Events retain the scope of their last announcement.
+Calendar titles distinguish address, area and unknown
 scope; their descriptions retain the published text and matching evidence.
 
 ### Upgrading automations

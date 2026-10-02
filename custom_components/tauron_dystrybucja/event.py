@@ -33,9 +33,22 @@ class TauronNewOutageEvent(TauronEntity, EventEntity):
     def __init__(self, coordinator: TauronOutageCoordinator) -> None:
         super().__init__(coordinator, "new_outage")
 
+    @property
+    def extra_state_attributes(self) -> None:
+        """EventEntity retains scope with the last event in state_attributes.
+
+        Do not overwrite it with the scope of a newer API response.
+        """
+        return None
+
     @callback
     def _handle_coordinator_update(self) -> None:
         """Trigger one event per newly announced outage."""
+        if not self.coordinator.last_update_success:
+            # A failed refresh keeps the previous payload. Do not announce its
+            # cached "new" list again while marking the entity unavailable.
+            super()._handle_coordinator_update()
+            return
         for outage in self.coordinator.data["new"]:
             start = outage["start"]
             end = outage["end"]

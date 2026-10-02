@@ -62,6 +62,7 @@ class CoordinatorTests(unittest.IsolatedAsyncioTestCase):
         )
         self.coordinator._api = Mock(async_get_outages=AsyncMock())
         self.coordinator._seen_keys = None
+        self.coordinator.last_update_success = True
         self.clock = patch("custom_components.tauron_dystrybucja.coordinator.dt_util.now", return_value=NOW)
         self.clock.start()
         self.addCleanup(self.clock.stop)
@@ -119,10 +120,24 @@ class CoordinatorTests(unittest.IsolatedAsyncioTestCase):
         entity = TauronNewOutageEvent(self.coordinator)
         entity.async_write_ha_state = Mock()
         entity._handle_coordinator_update()
-        attributes = entity.extra_state_attributes
+        attributes = {**entity.state_attributes, **(entity.extra_state_attributes or {})}
         self.assertEqual(attributes["event_type"], "new_outage")
         self.assertEqual(attributes["scope"], "area")
         self.assertIn("address_point_match", attributes)
+        await self.refresh(fixture("siewierz1"))
+        attributes = {**entity.state_attributes, **(entity.extra_state_attributes or {})}
+        self.assertEqual(attributes["scope"], "area")
+
+    async def test_failed_poll_does_not_replay_cached_new_events(self):
+        await self.refresh({"OutageItems": []})
+        await self.refresh(fixture("rakowiecka30"))
+        self.coordinator.last_update_success = False
+        entity = TauronNewOutageEvent(self.coordinator)
+        entity.async_write_ha_state = Mock()
+        entity._trigger_event = Mock()
+        entity._handle_coordinator_update()
+        entity._trigger_event.assert_not_called()
+        self.assertFalse(entity.available)
 
 
 class ApiAndFlowTests(unittest.IsolatedAsyncioTestCase):

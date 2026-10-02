@@ -21,8 +21,6 @@ class TauronEntity(CoordinatorEntity[TauronOutageCoordinator]):
             **{key: data[key] for key in (
                 "scope", "outage_list_type", "address_resolved"
             )},
-            # EventEntity's last-event attributes belong to that event, even
-            # when a later response has a different scope.
             **(super().extra_state_attributes or {}),
         }
 
