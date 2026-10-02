@@ -9,6 +9,7 @@ from homeassistant.util import dt as dt_util
 from . import TauronConfigEntry
 from .coordinator import TauronOutageCoordinator
 from .entity import TauronEntity
+from .outages import outage_metadata
 
 EVENT_NEW_OUTAGE = "new_outage"
 
@@ -41,6 +42,7 @@ class TauronNewOutageEvent(TauronEntity, EventEntity):
             self._trigger_event(
                 EVENT_NEW_OUTAGE,
                 {
+                    **outage_metadata(outage),
                     "outage_id": outage["id"],
                     "description": outage["message"],
                     "start": dt_util.as_local(start).isoformat() if start else None,

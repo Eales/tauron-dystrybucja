@@ -25,6 +25,7 @@
       }
     },
     "error": {
+      "unsupported_area": "Tauron does not serve this area.",
       "cannot_connect": "Cannot connect to the Tauron Dystrybucja API.",
       "too_few_characters": "Enter at least 3 characters.",
       "no_cities_found": "No matching city found.",
@@ -51,7 +52,11 @@
         "state": {
           "none": "No outages",
           "upcoming": "Outage announced",
-          "ongoing": "Outage in progress"
+          "ongoing": "Outage in progress",
+          "upcoming_area": "Outage announced in the area",
+          "ongoing_area": "Outage in progress in the area",
+          "upcoming_unknown": "Outage announced — unknown scope",
+          "ongoing_unknown": "Outage in progress — unknown scope"
         }
       },
       "next_outage": {
@@ -95,7 +100,7 @@
       }
     },
     "binary_sensor": {
-      "outage_active": { "name": "Outage in progress" }
+      "outage_active": { "name": "Active outage report" }
     },
     "calendar": {
       "outages": { "name": "Power outages" }

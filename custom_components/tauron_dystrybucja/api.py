@@ -20,6 +20,10 @@ class TauronApiError(Exception):
     """Raised when the Tauron API cannot be reached or returns an error."""
 
 
+class TauronUnsupportedAreaError(TauronApiError):
+    """The API explicitly says it does not serve the requested area."""
+
+
 class TauronApi:
     """Wraps the three endpoints this integration needs."""
 
@@ -73,4 +77,8 @@ class TauronApi:
                 "getServicedSwitchingoff": "true",
             },
         )
-        return data if isinstance(data, dict) else {}
+        if not isinstance(data, dict):
+            raise TauronApiError("Invalid outage response")
+        if data.get("IdsWWW") == [0]:
+            raise TauronUnsupportedAreaError("Tauron does not support this area")
+        return data

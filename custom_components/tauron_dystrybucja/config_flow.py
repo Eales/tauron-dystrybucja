@@ -19,7 +19,7 @@ from homeassistant.helpers.selector import (
     NumberSelectorMode,
 )
 
-from .api import TauronApi, TauronApiError
+from .api import TauronApi, TauronApiError, TauronUnsupportedAreaError
 from .const import (
     CONF_CITY_GAID,
     CONF_CITY_NAME,
@@ -160,6 +160,8 @@ class TauronConfigFlow(ConfigFlow, domain=DOMAIN):
                         from_date="2000-01-01T00:00:00",
                         to_date="2000-01-02T00:00:00",
                     )
+                except TauronUnsupportedAreaError:
+                    errors["base"] = "unsupported_area"
                 except TauronApiError as err:
                     _LOGGER.error("Error validating address: %s", err)
                     errors["base"] = "cannot_connect"

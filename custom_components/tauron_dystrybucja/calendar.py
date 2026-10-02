@@ -14,7 +14,11 @@ from .const import CONF_CITY_NAME, CONF_HOUSE_NO, CONF_STREET_NAME
 from .coordinator import TauronOutageCoordinator
 from .entity import TauronEntity
 
-SUMMARY = "Wyłączenie prądu"
+SUMMARIES = {
+    "address": "Wyłączenie prądu — adres wg Taurona",
+    "area": "Wyłączenie prądu w okolicy",
+    "unknown": "Wyłączenie prądu — nieznany zakres",
+}
 
 
 async def async_setup_entry(
@@ -28,14 +32,23 @@ async def async_setup_entry(
 
 def _to_event(outage: dict[str, Any], location: str) -> CalendarEvent | None:
     """Convert an outage into a calendar event, skipping incomplete ones."""
-    if not outage["start"] or not outage["end"]:
+    if not outage["start"] or not outage["end"] or outage["start"] >= outage["end"]:
         return None
+    evidence = {
+        "listed": "Punkt adresowy znajduje się na liście Taurona.",
+        "not_listed": "Punktu adresowego nie ma na liście Taurona; lista może być niepełna.",
+        "unavailable": "Brak danych do sprawdzenia punktu na liście Taurona.",
+    }[outage["address_point_match"]]
     return CalendarEvent(
         start=dt_util.as_local(outage["start"]),
         end=dt_util.as_local(outage["end"]),
-        summary=SUMMARY,
-        description=outage["message"] or "",
-        location=location,
+        summary=SUMMARIES[outage["scope"]],
+        description=(
+            f"{outage['message'] or ''}\n\n"
+            f"{SUMMARIES[outage['scope']]}. {evidence}\n"
+            "Komunikat Taurona nie potwierdza faktycznego braku zasilania w domu."
+        ),
+        location=location if outage["scope"] == "address" else f"Adres zapytania: {location}",
         uid=outage["key"],
     )
 

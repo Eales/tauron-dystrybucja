@@ -12,6 +12,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from homeassistant.util import dt as dt_util
 
 from .api import TauronApi, TauronApiError
+from .outages import is_current, is_upcoming, point_match, response_metadata
 from .const import (
     CONF_CITY_GAID,
     CONF_HOUSE_NO,
@@ -35,12 +36,16 @@ def _parse_date(value: str | None) -> datetime | None:
 def parse_outages(raw: dict[str, Any]) -> list[dict[str, Any]]:
     """Normalise the API payload into a sorted list of outages."""
     outages = []
+    metadata = response_metadata(raw)
     for item in raw.get("OutageItems") or []:
         start = _parse_date(item.get("StartDate"))
         end = _parse_date(item.get("EndDate"))
         outage_id = item.get("OutageId")
         outages.append(
             {
+                **metadata,
+                "address_point_match": point_match(raw, item),
+                "coordinates_type": item.get("CoordinatesType"),
                 "id": outage_id,
                 # The API reuses OutageId for separate time slots of the same
                 # works, so the start time is needed to identify an occurrence.
@@ -86,13 +91,18 @@ class TauronOutageCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         except TauronApiError as err:
             raise UpdateFailed(str(err)) from err
 
-        outages = parse_outages(raw)
+        all_outages = parse_outages(raw)
+        # Preserve raw reports for diagnostics; only actionable reports feed
+        # the count and announcements. Calendar history is fetched separately.
+        outages = [
+            o for o in all_outages if is_current(o, now) or is_upcoming(o, now)
+        ]
 
         current = next(
-            (o for o in outages if o["start"] and o["end"] and o["start"] <= now <= o["end"]),
+            (o for o in outages if is_current(o, now)),
             None,
         )
-        upcoming = next((o for o in outages if o["start"] and o["start"] > now), None)
+        upcoming = next((o for o in outages if is_upcoming(o, now)), None)
 
         # Outages announced since the previous refresh. On the very first run
         # everything is "new", but nothing is reported - otherwise every restart
@@ -104,6 +114,8 @@ class TauronOutageCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._seen_keys = {o["key"] for o in outages}
 
         return {
+            **response_metadata(raw),
+            "all_outages": all_outages,
             "outages": outages,
             "current": current,
             "next": upcoming,
