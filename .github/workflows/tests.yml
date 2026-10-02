@@ -1,0 +1,18 @@
+name: Regression tests
+on:
+  push:
+  pull_request:
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        homeassistant: ['2024.11.3', '2026.9.3']
+    steps:
+      - uses: actions/checkout@v5
+      # Official images keep HA's runtime dependencies consistent.
+      - run: >-
+          docker run --rm --network none --entrypoint python
+          -v "${{ github.workspace }}:/repo:ro" -w /repo
+          ghcr.io/home-assistant/home-assistant:${{ matrix.homeassistant }}
+          -m unittest discover -s tests -v

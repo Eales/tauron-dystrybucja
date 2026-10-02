@@ -5,6 +5,23 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-10-02
+
+### Fixed
+
+- Preserve API-declared address/area scope, distinguish it in status and calendar
+  titles, and expose resolution/membership evidence on entities and events.
+  Point-list omissions and town text never silently remove warnings (#5).
+- Reject unsupported areas during setup and refresh instead of reporting no outages.
+- Exclude ended/inactive faults from active status, counts and new announcements;
+  only planned work can be upcoming. Preserve calendar history and the 30-day horizon.
+
+### Changed
+
+- Status automations must include new `*_area` / `*_unknown` values when they
+  should react to all scopes. The binary sensor retains its ID and inclusive
+  behavior but is labelled “Active outage report”. See the README upgrade notes.
+
 ## [0.3.1] - 2026-07-18
 
 Documentation only. The integration code is identical to 0.3.0.

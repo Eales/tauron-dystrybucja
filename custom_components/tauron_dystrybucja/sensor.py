@@ -16,6 +16,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from . import TauronConfigEntry
 from .coordinator import TauronOutageCoordinator
 from .entity import TauronEntity
+from .outages import outage_metadata, status_value
 
 # Home Assistant rejects states longer than this.
 MAX_STATE_LENGTH = 255
@@ -57,8 +58,9 @@ class TauronRelevantOutageEntity(TauronEntity, SensorEntity):
         """Expose the outage as flat attributes, usable without templates."""
         outage = self._outage
         if not outage:
-            return {}
+            return super().extra_state_attributes
         return {
+            **outage_metadata(outage),
             "start": outage["start"],
             "end": outage["end"],
             "description": outage["message"],
@@ -70,7 +72,10 @@ class TauronStatusSensor(TauronEntity, SensorEntity):
 
     _attr_translation_key = "status"
     _attr_device_class = SensorDeviceClass.ENUM
-    _attr_options = [STATUS_NONE, STATUS_UPCOMING, STATUS_ONGOING]
+    _attr_options = [
+        STATUS_NONE, STATUS_UPCOMING, STATUS_ONGOING,
+        "upcoming_area", "ongoing_area", "upcoming_unknown", "ongoing_unknown",
+    ]
     _attr_icon = "mdi:transmission-tower"
 
     def __init__(self, coordinator: TauronOutageCoordinator) -> None:
@@ -79,11 +84,7 @@ class TauronStatusSensor(TauronEntity, SensorEntity):
     @property
     def native_value(self) -> str:
         data = self.coordinator.data
-        if data["current"]:
-            return STATUS_ONGOING
-        if data["next"]:
-            return STATUS_UPCOMING
-        return STATUS_NONE
+        return status_value(data["current"], data["next"])
 
 
 class TauronNextOutageSensor(TauronRelevantOutageEntity):
@@ -141,8 +142,8 @@ class TauronNextOutageDurationSensor(TauronRelevantOutageEntity):
 class TauronNextOutageDescriptionSensor(TauronRelevantOutageEntity):
     """The description Tauron publishes for the ongoing or next outage.
 
-    Tauron matches outages to an address by area, so this text is what tells you
-    whether your street is actually affected.
+    Read alongside the API scope. Neither the text nor point membership is a
+    guarantee of the house's physical power supply state.
     """
 
     _attr_translation_key = "next_outage_description"
@@ -189,8 +190,10 @@ class TauronOutageCountSensor(TauronEntity, SensorEntity):
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         return {
+            **super().extra_state_attributes,
             "outages": [
                 {
+                    **outage_metadata(outage),
                     "description": outage["message"],
                     "start": outage["start"],
                     "end": outage["end"],

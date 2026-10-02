@@ -12,6 +12,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import TauronConfigEntry
 from .entity import TauronEntity
+from .outages import outage_metadata
 
 
 async def async_setup_entry(
@@ -24,7 +25,7 @@ async def async_setup_entry(
 
 
 class TauronOutageActiveSensor(TauronEntity, BinarySensorEntity):
-    """True while an outage covering this address is in progress."""
+    """True for an ongoing report; scope may be address, area or unknown."""
 
     _attr_translation_key = "outage_active"
     _attr_device_class = BinarySensorDeviceClass.PROBLEM
@@ -41,8 +42,9 @@ class TauronOutageActiveSensor(TauronEntity, BinarySensorEntity):
     def extra_state_attributes(self) -> dict[str, Any]:
         current = self.coordinator.data["current"]
         if not current:
-            return {}
+            return super().extra_state_attributes
         return {
+            **outage_metadata(current),
             "description": current["message"],
             "start": current["start"],
             "end": current["end"],

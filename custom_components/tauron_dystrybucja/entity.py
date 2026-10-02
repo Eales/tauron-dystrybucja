@@ -13,6 +13,17 @@ class TauronEntity(CoordinatorEntity[TauronOutageCoordinator]):
 
     _attr_has_entity_name = True
 
+    @property
+    def extra_state_attributes(self):
+        """Expose response scope even when no outage was returned."""
+        data = self.coordinator.data
+        return {
+            **{key: data[key] for key in (
+                "scope", "outage_list_type", "address_resolved"
+            )},
+            **(super().extra_state_attributes or {}),
+        }
+
     def __init__(self, coordinator: TauronOutageCoordinator, key: str) -> None:
         super().__init__(coordinator)
         entry = coordinator.entry

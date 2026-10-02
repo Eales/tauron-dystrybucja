@@ -25,6 +25,7 @@
       }
     },
     "error": {
+      "unsupported_area": "Tauron nie obsługuje tego obszaru.",
       "cannot_connect": "Nie można połączyć się z API Tauron Dystrybucja.",
       "too_few_characters": "Podaj co najmniej 3 znaki.",
       "no_cities_found": "Nie znaleziono pasującej miejscowości.",
@@ -51,7 +52,11 @@
         "state": {
           "none": "Brak wyłączeń",
           "upcoming": "Zapowiedziane wyłączenie",
-          "ongoing": "Trwa wyłączenie"
+          "ongoing": "Trwa wyłączenie",
+          "upcoming_area": "Zapowiedziane wyłączenie w okolicy",
+          "ongoing_area": "Trwa wyłączenie w okolicy",
+          "upcoming_unknown": "Zapowiedziane wyłączenie — nieznany zakres",
+          "ongoing_unknown": "Trwa wyłączenie — nieznany zakres"
         }
       },
       "next_outage": {
@@ -95,7 +100,7 @@
       }
     },
     "binary_sensor": {
-      "outage_active": { "name": "Trwa wyłączenie" }
+      "outage_active": { "name": "Aktywny komunikat o wyłączeniu" }
     },
     "calendar": {
       "outages": { "name": "Wyłączenia prądu" }

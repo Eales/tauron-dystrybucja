@@ -56,20 +56,20 @@ it can go straight onto a dashboard.
 
 | Entity | Type | Description |
 | --- | --- | --- |
-| `Status` | sensor (`enum`) | `No outages` / `Outage announced` / `Outage in progress`. Look here first. |
+| `Status` | sensor (`enum`) | No reports, announced or ongoing; explicitly distinguishes address, area and unknown scope. |
 | `Outage start` | sensor (`timestamp`) | When it starts. |
 | `Outage end` | sensor (`timestamp`) | When it ends. |
 | `Duration` | sensor (`duration`, hours) | How long it lasts. |
 | `Outage description` | sensor | What Tauron published. See the truncation note below. |
-| `Announced outages` | sensor | How many outages fall in the next 30 days. |
+| `Announced outages` | sensor | Current reports and future planned work within the 30-day query window. |
 | `Power outages` | calendar | Every outage as a calendar event; works with calendar triggers and the Calendar panel. |
 | `New outage` | event | Fires once when Tauron announces an outage that was not known before. |
-| `Outage in progress` | binary sensor (`problem`) | `on` while an outage is ongoing. |
+| `Active outage report` | binary sensor (`problem`) | `on` for an ongoing API report, including area warnings. Not a measurement of power at the house. |
 
 ### Attributes
 
 `Outage start`, `Outage end`, `Duration`, `Outage description` and
-`Outage in progress` all carry the same flat attributes, so an Entities card
+`Active outage report` all carry the same flat attributes, so an Entities card
 with `type: attribute` rows needs no templating:
 
 | Attribute | Meaning |
@@ -77,6 +77,11 @@ with `type: attribute` rows needs no templating:
 | `start` | Start of the outage |
 | `end` | End of the outage |
 | `description` | The published description |
+| `scope` | `address` (API list type 1), `area` (type 2), or `unknown` |
+| `outage_list_type` | Original API scope value |
+| `address_resolved` | Whether Tauron returned an address point; independent of scope |
+| `address_point_match` | `listed`, `not_listed`, or `unavailable` (no point or empty/missing list); evidence only |
+| `coordinates_type` | API coordinate provenance; not an impact guarantee |
 
 Additionally:
 
@@ -87,6 +92,31 @@ Additionally:
   `start`, `end` and `description`.
 - `New outage` carries `outage_id`, `start`, `end` and `description` when it
   fires.
+
+Outage lists and new-outage events also include the scope/matching attributes.
+Sensors retain response scope and address-resolution attributes even when
+there are no reports. Events retain the scope of their last announcement.
+Calendar titles distinguish address, area and unknown
+scope; their descriptions retain the published text and matching evidence.
+
+### Upgrading automations
+
+Existing entity unique IDs are unchanged. The binary sensor still includes area
+warnings, but its name now describes an **active report**. Its existing entity ID
+does not change. For the status sensor, `none`, `upcoming` and `ongoing` remain;
+the latter two now mean API-declared **address** scope. Area results use
+`upcoming_area` / `ongoing_area`; missing or unrecognised scope uses
+`upcoming_unknown` / `ongoing_unknown`. Update state conditions that should
+respond to all scopes. Filtering on `scope: address` is optional and can miss
+relevant warnings published with area scope.
+
+Only ongoing reports and future planned work feed the count and new-outage
+events. Faults require `IsActive=true` and a current time interval; planned work
+does not require that flag. The end boundary is exclusive. Ended reports remain
+available through calendar range queries and diagnostics. Unsupported areas
+(`IdsWWW=[0]`) produce a setup error or unavailable entities, not “No outages”.
+Status is refreshed at the configured polling interval; calendar triggers can
+be used for time-based reminders between polls.
 
 ## Dashboards
 
@@ -137,7 +167,9 @@ content: |
   {% set dni = ['poniedziałek','wtorek','środa','czwartek','piątek','sobota','niedziela'] %}
   {% set lista = state_attr(encja, 'outages') or [] %}
   ## ⚡ Wyłączenia prądu
-  {% if lista | count == 0 %}
+  {% if states(encja) in ['unknown', 'unavailable'] %}
+  Dane Taurona są niedostępne.
+  {% elif lista | count == 0 %}
   Brak zapowiedzianych wyłączeń na najbliższe 30 dni.
   {% else %}
   {% for o in lista %}
@@ -146,13 +178,14 @@ content: |
   {% set s = s | as_local %}
   {% set k = k | as_local %}
   {% set ile = (s.date() - now().date()).days %}
-  {% if s <= now() and now() <= k %}
+  {% if s <= now() and now() < k %}
   ### 🔴 Trwa teraz — do {{ k.strftime('%H:%M') }}
   {% else %}
   ### {{ dni[s.weekday()] }} {{ s.strftime('%d.%m') }}, {{ s.strftime('%H:%M') }}–{{ k.strftime('%H:%M') }}
   {% if ile == 0 %}dzisiaj{% elif ile == 1 %}jutro{% elif ile == 2 %}pojutrze{% else %}za {{ ile }} dni{% endif %}
   {% endif %}
 
+  Zakres wg Taurona: {{ {'address': 'adres', 'area': 'okolica', 'unknown': 'nieznany'}.get(o.scope, 'nieznany') }}.
   {{ o.description }}
   {% if not loop.last %}
 
@@ -201,8 +234,9 @@ automation:
     actions:
       - action: notify.persistent_notification
         data:
-          title: "Uwaga - planowane wyłączenie prądu"
+          title: "Tauron — nowy komunikat o wyłączeniu"
           message: >-
+            Zakres wg Taurona: {{ trigger.to_state.attributes.scope }}.
             {{ trigger.to_state.attributes.start | as_datetime | as_local
                | as_timestamp | timestamp_custom('%d.%m %H:%M') }}
             - {{ trigger.to_state.attributes.end | as_datetime | as_local
@@ -226,17 +260,17 @@ automation:
     actions:
       - action: notify.persistent_notification
         data:
-          title: "Wkrótce nie będzie prądu"
+          title: "{{ trigger.calendar_event.summary }}"
           message: "{{ trigger.calendar_event.description }}"
 ```
 
 ## Notes
 
-- **Always read the description.** Tauron matches outages to an address by
-  *area*, and the description lists the streets actually affected - which may be
-  streets other than yours. An outage returned for your address is not a promise
-  that your address loses power. The description is the only way to tell, which
-  is why every card here shows it.
+- **Read the scope and description together.** Tauron can return address or
+  area results. Neither a point-ID match nor the description guarantees that
+  your house loses power. Missing point IDs and town-name text are not used to
+  discard reports: recorded API responses contain conflicting evidence. See
+  [the investigation](https://github.com/Eales/tauron-dystrybucja/issues/5).
 - `New outage` stays silent on the first refresh after a restart, so restarting
   Home Assistant never replays announcements you already saw.
 - Tauron reuses one outage ID across separate time slots of the same works. Each
