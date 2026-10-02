@@ -5,6 +5,22 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — 0.5.0
+
+### Added
+
+- A local address picker opened from the integration setup menu. City and street
+  suggestions are fetched from Tauron after three characters, with debouncing,
+  keyboard navigation, retry messages and Polish/English text.
+- The standard Home Assistant step-by-step form remains available. Existing
+  entries and polling options are unchanged.
+
+### Security
+
+- The picker uses a short-lived, flow-bound capability instead of HA credentials.
+  Only city/street combinations returned by Tauron may be submitted. Completion,
+  cancellation and expiry prevent further use; requests and results are bounded.
+
 ## [0.4.0] - 2026-10-02
 
 ### Fixed

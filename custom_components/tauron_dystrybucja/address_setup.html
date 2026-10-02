@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Tauron · Wybierz adres</title>
+  <style nonce="__NONCE__">
+    :root { font-family: system-ui, sans-serif; color: #18303a; background: #f3f6f8; color-scheme: light; }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 32px 16px; }
+    main { max-width: 540px; margin: 4vh auto; background: #fff; padding: 32px; border-radius: 20px; border: 1px solid #dce5e9; box-shadow: 0 14px 44px #18303a0b; }
+    .brand { color: #b40066; font-size: 13px; font-weight: 750; letter-spacing: .06em; }
+    h1 { font-size: 28px; letter-spacing: -.035em; margin: 16px 0 10px; }
+    p { line-height: 1.55; }
+    .intro, .hint, footer { color: #526874; }
+    .field { margin-top: 24px; }
+    label { display: block; font-size: 14px; font-weight: 650; margin-bottom: 8px; }
+    input { font: inherit; width: 100%; min-height: 48px; border: 1px solid #96aab5; border-radius: 9px; padding: 12px; background: #fff; color: inherit; }
+    input:focus { outline: 3px solid #b4006633; border-color: #b40066; }
+    input:disabled { background: #f1f4f6; color: #526874; }
+    .hint { font-size: 13px; min-height: 20px; margin: 7px 0 0; }
+    ul { padding: 4px; margin: 6px 0 0; list-style: none; border: 1px solid #b5c4cc; border-radius: 10px; max-height: 224px; overflow-y: auto; }
+    li { padding: 11px 10px; border-radius: 6px; cursor: pointer; overflow-wrap: anywhere; }
+    li:hover, li[aria-selected="true"] { background: #fce8f3; }
+    button { font: inherit; border: 0; border-radius: 9px; padding: 13px 18px; cursor: pointer; min-height: 46px; }
+    button:focus-visible { outline: 3px solid #b4006655; outline-offset: 3px; }
+    #submit, #close { background: #b40066; color: #fff; font-weight: 650; width: 100%; margin-top: 24px; }
+    button:disabled { cursor: default; background: #dbe2e6 !important; color: #637680 !important; }
+    .retry { margin-top: 6px; padding: 5px 10px; background: #edf3f6; color: inherit; font-size: 13px; }
+    #notice { overflow-wrap: anywhere; }
+    #notice.error { color: #ac2430; }
+    footer { border-top: 1px solid #e2e9ed; padding-top: 18px; margin-top: 26px; font-size: 12px; line-height: 1.6; }
+    [hidden] { display: none !important; }
+    @media (max-width: 400px) { body { padding: 12px; } main { padding: 22px 18px; margin: 0 auto; } h1 { font-size: 25px; } }
+    @media (prefers-color-scheme: dark) {
+      :root { color: #e5eef2; background: #111c23; color-scheme: dark; }
+      main { background: #1a2a33; border-color: #344a57; }
+      input { background: #12222c; border-color: #6c8390; }
+      input:disabled { background: #223640; color: #a9bcc7; }
+      .brand { color: #ff8cc5; }
+      .intro, .hint, footer { color: #b2c5cf; }
+      li:hover, li[aria-selected="true"] { background: #573047; }
+      .retry { background: #2b414e; }
+      footer { border-color: #344a57; }
+      #notice.error { color: #ffacb4; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <div class="brand">TAURON DYSTRYBUCJA · HOME ASSISTANT</div>
+  <h1 data-text="title">Wybierz adres</h1>
+  <p class="intro" data-text="intro">Zacznij wpisywać nazwę i wybierz podpowiedź z listy. Adres potwierdzisz w Home Assistant.</p>
+  <form id="form" autocomplete="off">
+    <div class="field">
+      <label for="city" data-text="city">Miejscowość</label>
+      <input id="city" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="city-options" aria-describedby="city-hint" maxlength="100" required spellcheck="false">
+      <ul id="city-options" role="listbox" hidden></ul>
+      <p id="city-hint" class="hint" role="status" data-text="minimum">Wpisz co najmniej 3 znaki.</p>
+      <button type="button" class="retry" id="city-retry" hidden data-text="retry">Spróbuj ponownie</button>
+    </div>
+    <div class="field">
+      <label for="street" data-text="street">Ulica</label>
+      <input id="street" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="street-options" aria-describedby="street-hint" maxlength="100" required spellcheck="false" disabled>
+      <ul id="street-options" role="listbox" hidden></ul>
+      <p id="street-hint" class="hint" role="status" data-text="chooseCity">Najpierw wybierz miejscowość.</p>
+      <button type="button" class="retry" id="street-retry" hidden data-text="retry">Spróbuj ponownie</button>
+    </div>
+    <div class="field">
+      <label for="house" data-text="houseLabel">Numer domu</label>
+      <input id="house" maxlength="64" required placeholder="12A" autocomplete="off">
+    </div>
+    <button id="submit" type="submit" disabled data-text="submit">Użyj tego adresu</button>
+  </form>
+  <p id="notice" role="status" aria-live="polite"></p>
+  <button id="close" type="button" hidden data-text="close">Zamknij i wróć do Home Assistant</button>
+  <footer data-text="footer">Podpowiedzi pochodzą z Taurona. Możesz też zamknąć ten formularz, anulować bieżącą konfigurację w HA i wybrać „Standardowy formularz”. Sesja jest ważna przez 15 minut.</footer>
+</main>
+<script nonce="__NONCE__">
+(() => {
+  "use strict";
+  const pl = !navigator.language || navigator.language.toLowerCase().startsWith("pl");
+  const messages = {
+    title: ["Wybierz adres", "Choose an address"],
+    intro: ["Zacznij wpisywać nazwę i wybierz podpowiedź z listy. Adres potwierdzisz w Home Assistant.", "Start typing and choose a suggestion. You will confirm the address in Home Assistant."],
+    city: ["Miejscowość", "City"], street: ["Ulica", "Street"], houseLabel: ["Numer domu", "House number"],
+    minimum: ["Wpisz co najmniej 3 znaki.", "Enter at least 3 characters."],
+    chooseCity: ["Najpierw wybierz miejscowość.", "Choose a city first."],
+    submit: ["Użyj tego adresu", "Use this address"], retry: ["Spróbuj ponownie", "Try again"],
+    close: ["Zamknij i wróć do Home Assistant", "Close and return to Home Assistant"],
+    footer: ["Podpowiedzi pochodzą z Taurona. Możesz też zamknąć ten formularz, anulować bieżącą konfigurację w HA i wybrać „Standardowy formularz”. Sesja jest ważna przez 15 minut.", "Suggestions come from Tauron. Alternatively, close this page, cancel this setup in HA and choose ‘Standard form’. The session lasts 15 minutes."],
+    loading: ["Szukam…", "Searching…"], selected: ["Wybrano z listy Taurona.", "Selected from Tauron's list."],
+    results: ["Wybierz wynik z listy.", "Choose a result from the list."],
+    truncated: ["Jest więcej wyników. Dopisz część nazwy, aby zawęzić listę.", "More results exist. Type more of the name to narrow the list."],
+    noCities: ["Brak wyników. Spróbuj innego fragmentu nazwy.", "No results. Try a different part of the name."],
+    noStreets: ["Brak ulic. Spróbuj innej nazwy. Adresy bez nazwanej ulicy nie są obecnie obsługiwane.", "No streets found. Try a different name. Addresses without a named street are currently unsupported."],
+    expired: ["Sesja wygasła lub została zamknięta. Wróć do HA, anuluj konfigurację i rozpocznij ją ponownie.", "This session expired or was closed. Return to HA, cancel setup and start again."],
+    cannot_connect: ["Nie udało się pobrać podpowiedzi z Taurona. Spróbuj ponownie.", "Could not load Tauron suggestions. Try again."],
+    busy: ["Poprzednie wyszukiwanie jeszcze trwa. Spróbuj ponownie za chwilę.", "The previous search is still running. Try again shortly."],
+    selection: ["Wybierz miejscowość i ulicę z podpowiedzi.", "Choose both city and street from the suggestions."],
+    saving: ["Przekazuję adres do Home Assistant…", "Sending the address to Home Assistant…"],
+    done: ["Adres przekazany. Wróć do okna konfiguracji w Home Assistant, aby sprawdzić wynik i zakończyć dodawanie integracji.", "Address sent. Return to the Home Assistant setup dialog to check the result and finish adding the integration."],
+    request: ["Nie udało się przekazać adresu. Spróbuj ponownie.", "Could not send the address. Try again."],
+    house: ["Wpisz numer domu.", "Enter a house number."],
+  };
+  const t = key => (messages[key] || messages.request)[pl ? 0 : 1];
+  document.documentElement.lang = pl ? "pl" : "en";
+  document.title = `Tauron · ${t("title")}`;
+  document.querySelectorAll("[data-text]").forEach(el => { el.textContent = t(el.dataset.text); });
+  const token = location.hash.slice(1);
+  // Remove the capability from the visible URL/history. Reopening the link
+  // from HA works until expiry; reloading this page requires that link again.
+  history.replaceState(null, "", location.pathname);
+  const form = document.getElementById("form");
+  const house = document.getElementById("house");
+  const submit = document.getElementById("submit");
+  const notice = document.getElementById("notice");
+  let stopped = false;
+  let saving = false;
+  const fields = {};
+  for (const name of ["city", "street"]) {
+    fields[name] = { input: document.getElementById(name), list: document.getElementById(`${name}-options`), hint: document.getElementById(`${name}-hint`), retry: document.getElementById(`${name}-retry`), selected: null, options: [], active: -1, sequence: 0, controller: null, timer: null };
+  }
+  function updateSubmit() { submit.disabled = stopped || saving || !fields.city.selected || !fields.street.selected || !house.value.trim(); }
+  function clearResults(field) {
+    field.options = []; field.active = -1; field.list.replaceChildren(); field.list.hidden = true;
+    field.input.setAttribute("aria-expanded", "false"); field.input.removeAttribute("aria-activedescendant");
+  }
+  function invalidate(field) {
+    clearTimeout(field.timer); field.controller?.abort(); field.sequence++;
+    field.selected = null; field.retry.hidden = true; clearResults(field);
+  }
+  function stop(message) {
+    stopped = true;
+    for (const field of Object.values(fields)) { invalidate(field); field.input.disabled = true; }
+    house.disabled = true; updateSubmit(); notice.className = "error"; notice.textContent = message;
+  }
+  async function api(data, signal) {
+    const response = await fetch(location.pathname, {
+      method: "POST", credentials: "omit", cache: "no-store", signal,
+      headers: { "Content-Type": "application/json", "X-Tauron-Setup": token },
+      body: JSON.stringify(data),
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || "request");
+    return result;
+  }
+  function select(name, option) {
+    const field = fields[name];
+    invalidate(field); field.selected = option; field.input.value = option.label;
+    field.hint.textContent = t("selected");
+    if (name === "city") {
+      invalidate(fields.street); fields.street.input.value = ""; fields.street.input.disabled = false;
+      fields.street.hint.textContent = t("minimum"); fields.street.input.focus();
+    } else { house.focus(); }
+    updateSubmit();
+  }
+  function activate(field, index) {
+    field.active = index;
+    [...field.list.children].forEach((li, i) => li.setAttribute("aria-selected", String(i === index)));
+    if (index >= 0) {
+      const li = field.list.children[index]; field.input.setAttribute("aria-activedescendant", li.id);
+      li.scrollIntoView({ block: "nearest" });
+    }
+  }
+  async function search(name) {
+    const field = fields[name];
+    const query = field.input.value.trim();
+    const city = fields.city.selected?.value;
+    if (stopped || query.length < 3 || (name === "street" && !city)) return;
+    field.controller?.abort(); field.controller = new AbortController();
+    const sequence = ++field.sequence;
+    field.hint.textContent = t("loading"); field.retry.hidden = true;
+    try {
+      const result = await api({ action: name === "city" ? "cities" : "streets", query, city }, field.controller.signal);
+      if (sequence !== field.sequence || (name === "street" && city !== fields.city.selected?.value)) return;
+      clearResults(field); field.options = result.options;
+      result.options.forEach((option, index) => {
+        const li = document.createElement("li"); li.id = `${name}-option-${index}`;
+        li.setAttribute("role", "option"); li.setAttribute("aria-selected", "false"); li.textContent = option.label;
+        li.addEventListener("pointerdown", ev => ev.preventDefault());
+        li.addEventListener("click", () => select(name, option)); field.list.append(li);
+      });
+      field.list.hidden = result.options.length === 0;
+      field.input.setAttribute("aria-expanded", String(result.options.length > 0));
+      field.hint.textContent = t(result.options.length ? (result.truncated ? "truncated" : "results") : (name === "city" ? "noCities" : "noStreets"));
+    } catch (error) {
+      if (sequence !== field.sequence || error.name === "AbortError") return;
+      if (error.message === "expired") { stop(t("expired")); return; }
+      field.hint.textContent = t(error.message === "busy" ? "busy" : "cannot_connect"); field.retry.hidden = false;
+    }
+  }
+  for (const [name, field] of Object.entries(fields)) {
+    field.input.addEventListener("input", () => {
+      invalidate(field);
+      if (name === "city") {
+        invalidate(fields.street); fields.street.input.value = ""; fields.street.input.disabled = true;
+        fields.street.hint.textContent = t("chooseCity");
+      }
+      field.hint.textContent = t("minimum"); updateSubmit();
+      if (field.input.value.trim().length >= 3) {
+        field.hint.textContent = t("loading"); field.timer = setTimeout(() => search(name), 350);
+      }
+    });
+    field.retry.addEventListener("click", () => search(name));
+    field.input.addEventListener("keydown", ev => {
+      if (ev.key === "Escape") { clearResults(field); return; }
+      if (!field.options.length) return;
+      if (ev.key === "ArrowDown" || ev.key === "ArrowUp") {
+        ev.preventDefault();
+        const next = field.active < 0
+          ? (ev.key === "ArrowDown" ? 0 : field.options.length - 1)
+          : (field.active + (ev.key === "ArrowDown" ? 1 : -1) + field.options.length) % field.options.length;
+        activate(field, next);
+      } else if (ev.key === "Enter") {
+        ev.preventDefault(); if (field.active >= 0) select(name, field.options[field.active]);
+      }
+    });
+  }
+  house.addEventListener("input", updateSubmit);
+  form.addEventListener("submit", async ev => {
+    ev.preventDefault(); updateSubmit(); if (submit.disabled) return;
+    saving = true; updateSubmit(); notice.className = ""; notice.textContent = t("saving");
+    for (const field of Object.values(fields)) { field.input.disabled = true; }
+    house.disabled = true;
+    try {
+      await api({ action: "finish", city: fields.city.selected.value, street: fields.street.selected.value, house_no: house.value.trim() });
+      stopped = true; form.hidden = true; notice.textContent = t("done"); document.getElementById("close").hidden = false;
+    } catch (error) {
+      if (error.message === "expired") { stop(t("expired")); }
+      else {
+        notice.className = "error"; notice.textContent = t(error.message);
+        for (const field of Object.values(fields)) { field.input.disabled = false; } house.disabled = false;
+      }
+    } finally { saving = false; updateSubmit(); }
+  });
+  document.getElementById("close").addEventListener("click", () => window.close());
+  if (!token) stop(t("expired")); else fields.city.input.focus();
+})();
+</script>
+</body>
+</html>

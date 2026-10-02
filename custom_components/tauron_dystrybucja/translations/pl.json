@@ -3,8 +3,22 @@
     "step": {
       "user": {
         "title": "Tauron Dystrybucja",
+        "description": "Wybierz sposób wprowadzania adresu.",
+        "menu_options": {
+          "address": "Formularz z podpowiedziami",
+          "manual": "Standardowy formularz"
+        }
+      },
+      "address": {
+        "title": "Wybierz adres",
+        "description": "Otwórz formularz integracji. Wpisz co najmniej 3 znaki i wybierz miejscowość oraz ulicę z podpowiedzi, a następnie podaj numer domu. Po zatwierdzeniu wróć tutaj, aby sprawdzić wynik konfiguracji. Link jest ważny przez 15 minut. Aby skorzystać ze standardowego formularza, anuluj konfigurację i rozpocznij ją ponownie."
+      },
+      "manual": {
+        "title": "Tauron Dystrybucja",
         "description": "Podaj co najmniej 3 znaki nazwy miejscowości.",
-        "data": { "city_partial": "Miejscowość" }
+        "data": {
+          "city_partial": "Miejscowość"
+        }
       },
       "city": {
         "title": "Wybierz miejscowość",
@@ -33,7 +47,8 @@
       "invalid_house_number": "Podaj numer domu."
     },
     "abort": {
-      "already_configured": "Ten adres jest już skonfigurowany."
+      "already_configured": "Ten adres jest już skonfigurowany.",
+      "wizard_busy": "Otwartych jest zbyt wiele formularzy. Spróbuj później lub wybierz standardowy formularz."
     }
   },
   "options": {
